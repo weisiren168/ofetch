@@ -6,8 +6,9 @@ import { createFetch } from "./base";
 
 export * from "./base";
 
+const useKeepAlive = JSON.parse(process.env.FETCH_KEEP_ALIVE || "false");
+
 export function createNodeFetch() {
-  const useKeepAlive = JSON.parse(process.env.FETCH_KEEP_ALIVE || "false");
   if (!useKeepAlive) {
     return nodeFetch;
   }
@@ -23,16 +24,16 @@ export function createNodeFetch() {
   };
 
   return function nodeFetchWithKeepAlive(
-    input: RequestInfo,
+    input: RequestInfo | URL,
     init?: RequestInit
   ) {
     return (nodeFetch as any)(input, { ...nodeFetchOptions, ...init });
   };
 }
 
-export const fetch = globalThis.fetch || createNodeFetch();
+export const fetch = (!useKeepAlive && globalThis.fetch) || createNodeFetch();
 
-export const Headers = globalThis.Headers || _Headers;
+export const Headers = (!useKeepAlive && globalThis.Headers) || _Headers;
 
 export const ofetch = createFetch({ fetch, Headers });
 export const $fetch = ofetch;
