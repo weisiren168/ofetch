@@ -104,6 +104,31 @@ function detectResponseType(_contentType = "") {
   }
   return "blob";
 }
+function mergeFetchOptions(input, defaults, Headers = globalThis.Headers) {
+  const merged = {
+    ...defaults,
+    ...input
+  };
+  if (defaults?.params && input?.params) {
+    merged.params = {
+      ...defaults?.params,
+      ...input?.params
+    };
+  }
+  if (defaults?.query && input?.query) {
+    merged.query = {
+      ...defaults?.query,
+      ...input?.query
+    };
+  }
+  if (defaults?.headers && input?.headers) {
+    merged.headers = new Headers(defaults?.headers || {});
+    for (const [key, value] of new Headers(input?.headers || {})) {
+      merged.headers.set(key, value);
+    }
+  }
+  return merged;
+}
 
 const retryStatusCodes = /* @__PURE__ */ new Set([
   408,
@@ -155,7 +180,7 @@ function createFetch(globalOptions) {
   const $fetchRaw = async function $fetchRaw2(_request, _options = {}) {
     const context = {
       request: _request,
-      options: { ...globalOptions.defaults, ..._options },
+      options: mergeFetchOptions(_options, globalOptions.defaults, Headers),
       response: void 0,
       error: void 0
     };
@@ -174,7 +199,7 @@ function createFetch(globalOptions) {
       }
       if (context.options.body && isPayloadMethod(context.options.method) && isJSONSerializable(context.options.body)) {
         context.options.body = typeof context.options.body === "string" ? context.options.body : JSON.stringify(context.options.body);
-        context.options.headers = new Headers(context.options.headers);
+        context.options.headers = new Headers(context.options.headers || {});
         if (!context.options.headers.has("content-type")) {
           context.options.headers.set("content-type", "application/json");
         }
@@ -183,16 +208,18 @@ function createFetch(globalOptions) {
         }
       }
     }
-    context.response = await fetch(
-      context.request,
-      context.options
-    ).catch(async (error) => {
+    try {
+      context.response = await fetch(
+        context.request,
+        context.options
+      );
+    } catch (error) {
       context.error = error;
       if (context.options.onRequestError) {
         await context.options.onRequestError(context);
       }
-      return onError(context);
-    });
+      return await onError(context);
+    }
     const responseType = (context.options.parseResponse ? "json" : context.options.responseType) || detectResponseType(context.response.headers.get("content-type") || "");
     if (responseType === "json") {
       const data = await context.response.text();
@@ -206,16 +233,17 @@ function createFetch(globalOptions) {
     if (context.options.onResponse) {
       await context.options.onResponse(context);
     }
-    if (context.response.status >= 400 && context.response.status < 600) {
+    if (!context.options.ignoreResponseError && context.response.status >= 400 && context.response.status < 600) {
       if (context.options.onResponseError) {
         await context.options.onResponseError(context);
       }
-      return onError(context);
+      return await onError(context);
     }
     return context.response;
   };
-  const $fetch = function $fetch2(request, options) {
-    return $fetchRaw(request, options).then((r) => r._data);
+  const $fetch = async function $fetch2(request, options) {
+    const r = await $fetchRaw(request, options);
+    return r._data;
   };
   $fetch.raw = $fetchRaw;
   $fetch.native = fetch;

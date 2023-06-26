@@ -33,6 +33,7 @@ interface FetchContext<T = any, R extends ResponseType = ResponseType> {
 interface FetchOptions<R extends ResponseType = ResponseType> extends Omit<RequestInit, "body"> {
     baseURL?: string;
     body?: RequestInit["body"] | Record<string, any>;
+    ignoreResponseError?: boolean;
     params?: SearchParameters;
     query?: SearchParameters;
     parseResponse?: (responseText: string) => any;

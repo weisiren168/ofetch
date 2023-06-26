@@ -3,7 +3,7 @@
 const http = require('node:http');
 const https = require('node:https');
 const nodeFetch = require('node-fetch-native');
-const fetch$1 = require('./shared/ofetch.af7192a8.cjs');
+const fetch$1 = require('./shared/ofetch.0fda5c9e.cjs');
 require('destr');
 require('ufo');
 

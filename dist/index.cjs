@@ -1,6 +1,6 @@
 'use strict';
 
-const fetch$1 = require('./shared/ofetch.af7192a8.cjs');
+const fetch$1 = require('./shared/ofetch.0fda5c9e.cjs');
 require('destr');
 require('ufo');
 
